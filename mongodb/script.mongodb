@@ -1,0 +1,123 @@
+//Update table marks such that all marks for those who don’t have “Java Technologies” mark will be decreased on 20
+use('java36')
+db.students.updateMany(
+    {
+        marks:
+        {
+            $not:
+            {
+                $elemMatch:
+                {
+                    subject: 'Java Technologies'
+                }
+            }
+        }
+    },
+    { $inc: { "marks.$[elem].mark": -20 } },
+    { arrayFilters: [{ "elem.mark": { $exists: true } }] }
+)
+//Update subject name ‘Java’ to ‘Java core’
+
+db.students.updateMany(
+    {},
+    { $set: { "marks.$[elem].subject": 'Java core' } },
+    { arrayFilters: [{ "elem.subject": 'Java' }] }
+)
+
+/*
+   Insert new “Java Advanced” marks for all students. 
+   These marks should be equaled to an average mark among all subjects related to Java of each student. 
+   For example if a student has 100 of “Java Technologies” and 70 of “Java core” the “Java Advanced” 
+   mark should be 85 for the student. Hint: applying either “like” or regular expressionDisplay 
+   two best students of Front-End (React, JS)*/
+
+var cur = db.students.aggregate([
+    { "$unwind": "$marks" },
+    {
+        $match: {
+            "marks.subject": {
+                "$regex": /\bJava\b/,
+                "$options": "i"
+            }
+        }
+    },
+    {
+        "$group":
+        {
+            "_id": "$_id",
+            "average_grade": { "$avg": "$marks.mark" }
+        }
+    }
+]);
+
+while (cur.hasNext()) {
+    var doc = cur.next();
+    db.students.update({ "_id": doc._id },
+        {
+            "$addToSet":
+            {
+                marks: {
+                    "subject": 'Java Advanced',
+                    "mark": doc.average_grade
+                }
+            },
+        }
+    );
+}
+
+// Delete mark objects of React of students who have mark of JS less than 80
+
+var cur = db.students.aggregate([
+    { "$unwind": "$marks" },
+    {
+        $match: {
+            "marks.subject": {
+                "$regex": /\bJS\b/,
+                "$options": "i"
+            },
+            "marks.mark": { $lt: 80 }
+        }
+    },
+    {
+        $project: { _id: 1 }
+    }
+]
+)
+while (cur.hasNext()) {
+    var doc = cur.next();
+    db.students.update({ "_id": doc._id },
+        {
+            $pull:
+            {
+                marks: {
+                    "subject": 'React',
+                }
+            },
+        }
+    );
+}
+// Delete students having average mark less than the college average mark 
+var college =
+    db.students.aggregate([
+        { "$unwind": "$marks" },
+        {
+            $group: { _id: null, average: { $avg: "$marks.mark" } }
+        },
+    ]).toArray()[0];
+var cur =
+    db.students.aggregate([
+        { "$unwind": "$marks" },
+        {
+            $group: { _id: "$_id", average: { $avg: "$marks.mark" } }
+        },
+        {
+            $match: {
+                "average": { $lt: college.average },
+            }
+        },
+    ]);
+
+while (cur.hasNext()) {
+    var doc = cur.next();
+    db.students.deleteOne({ "_id": doc._id });
+}
