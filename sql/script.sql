@@ -1,4 +1,23 @@
 -- Update table marks such that all marks for those who don’t have “Java Technologies” mark will be decreased on 20
+-- only for postgress
+UPDATE marks set mark=mark - 20 where stid not in 
+(select stid from students_marks_subjects where subject = 'Java Technologies')
+-- for mysql without temporary table
+
+UPDATE marks
+SET mark = mark - 20
+WHERE stid NOT IN (
+SELECT * FROM (
+SELECT stid
+    FROM marks
+    WHERE suid = (
+                SELECT suid
+                from subjects
+                WHERE subject = "Java Technologies"
+        )
+) x
+);
+-- for mysql with temporary table  
 CREATE TEMPORARY TABLE m2
 SELECT stid
 FROM marks
