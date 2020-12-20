@@ -13,7 +13,7 @@ SELECT stid
     WHERE suid = (
                 SELECT suid
                 from subjects
-                WHERE subject = "Java Technologies"
+                WHERE subject = 'Java Technologies'
         )
 ) x
 );
@@ -24,7 +24,7 @@ FROM marks
 WHERE suid = (
         SELECT suid
         from subjects
-        WHERE subject = "Java Technologies"
+        WHERE subject = 'Java Technologies'
     );
 UPDATE marks
 SET mark = mark - 20

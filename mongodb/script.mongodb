@@ -96,6 +96,25 @@ while (cur.hasNext()) {
         }
     );
 }
+
+// simplie
+db.studetnst.updateMany(
+    {
+        marks: {
+            $elemMatch: {
+                subject: 'JS',
+                mark: { $lt: 80 }
+            }
+        }
+    },
+    {
+        $pull:
+        {
+            marks: {
+                "subject": 'React',
+            }
+        }
+    })
 // Delete students having average mark less than the college average mark 
 var college =
     db.students.aggregate([
